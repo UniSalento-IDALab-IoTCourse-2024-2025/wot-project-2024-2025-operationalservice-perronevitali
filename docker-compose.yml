@@ -1,0 +1,30 @@
+services:
+
+  UserServiceFARO:
+    image: openjdk:21
+    container_name: UserServiceFARO
+    ports:
+      - 8090:8090
+      - 8000:8000
+    expose:
+      - "8000"
+    depends_on:
+      - UserMongoFARO
+    networks:
+      - faro-net
+    volumes:
+      - ./UserServiceFARO-0.0.1-SNAPSHOT-runner.jar:/app/app.jar
+    working_dir: /app
+    entrypoint: java -Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000 -jar /app/app.jar
+
+  UserMongoFARO:
+    image: mongo:5.0
+    container_name: UserMongoFARO
+    ports:
+      - 27017:27017
+    networks:
+      - faro-net
+networks:
+  faro-net:
+    driver:
+      "bridge"

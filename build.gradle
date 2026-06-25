@@ -1,0 +1,100 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+    id 'jacoco'
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+
+    implementation 'io.quarkiverse.rabbitmqclient:quarkus-rabbitmq-client:3.3.0'
+
+    // core / REST (sostituisce spring-boot-starter-web)
+    implementation 'io.quarkus:quarkus-arc'
+    implementation 'io.quarkus:quarkus-rest'
+    implementation 'io.quarkus:quarkus-rest-jackson'
+
+    // compatibilità Spring (@RestController, @Service, @Autowired, ecc.)
+    implementation 'io.quarkus:quarkus-spring-web'
+    implementation 'io.quarkus:quarkus-spring-di'
+
+    // MongoDB (sostituisce spring-boot-starter-data-mongodb)
+    implementation 'io.quarkus:quarkus-mongodb-panache'
+
+    // RabbitMQ reattivo (sostituisce spring-boot-starter-amqp)
+    implementation 'io.quarkus:quarkus-messaging-rabbitmq'
+
+    // sicurezza
+    implementation 'io.quarkus:quarkus-security'
+
+    // BCrypt / PasswordEncoder (standalone, senza il resto di Spring Security)
+    implementation 'org.springframework.security:spring-security-crypto:6.3.4'
+
+    // JWT: libreria indipendente da Spring, si porta via senza modifiche
+    implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+
+    // test
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.quarkus:quarkus-junit5-mockito'
+    testImplementation 'io.rest-assured:rest-assured'
+    testImplementation 'org.mockito:mockito-core'
+    testImplementation 'org.mockito:mockito-junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+group 'it.unisalento.faro'
+version '0.0.1-SNAPSHOT'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+test {
+    systemProperty "java.util.logging.manager", "java.util.logging.LogManager"
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
+    dependsOn compileJava
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        csv.required = false
+        html.required = true
+    }
+}
+
+jacocoTestCoverageVerification {
+    dependsOn test
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.80
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
