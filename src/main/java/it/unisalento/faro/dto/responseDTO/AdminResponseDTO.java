@@ -1,6 +1,6 @@
 package it.unisalento.faro.dto.responseDTO;
 
-import it.unisalento.faro.dto.list.AdminsListDTO;
+import it.unisalento.faro.dto.main.list.AdminsListDTO;
 
 public class AdminResponseDTO extends BaseResponseDTO {
     public static final int ADMIN_NOT_FOUND = 1;

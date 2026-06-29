@@ -1,6 +1,6 @@
 package it.unisalento.faro.dto.responseDTO;
 
-import it.unisalento.faro.dto.list.UsersListDTO;
+import it.unisalento.faro.dto.main.list.UsersListDTO;
 
 public class UserResponseDTO extends BaseResponseDTO {
     public static final int USER_NOT_FOUND = 1;

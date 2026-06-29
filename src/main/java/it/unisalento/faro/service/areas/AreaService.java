@@ -1,13 +1,20 @@
 package it.unisalento.faro.service.areas;
 
+import it.unisalento.faro.configuration.rabbitmq.RabbitMQConstants;
+import it.unisalento.faro.configuration.rabbitmq.RabbitMQManager;
+import it.unisalento.faro.configuration.rabbitmq.RabbitMQMessageTypes;
 import it.unisalento.faro.domain.Area;
 import it.unisalento.faro.dto.main.AreaDTO;
+import it.unisalento.faro.dto.messagesDTO.AreaAlertMessage;
+import it.unisalento.faro.dto.messagesDTO.AreaSafeMessage;
+import it.unisalento.faro.dto.messagesDTO.FaroMessage;
 import it.unisalento.faro.exceptions.AreaNotFoundException;
 import it.unisalento.faro.repositories.AreaRepository;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,6 +23,9 @@ public class AreaService {
 
     @Inject
     AreaRepository areaRepository;
+
+    @Inject
+    RabbitMQManager rabbitMQManager;
 
     public List<AreaDTO> getAllAreas() {
         List<Area> areas = areaRepository.listAll();
@@ -105,13 +115,81 @@ public class AreaService {
         areaRepository.update(area);
     }
 
+    // updateStatus — quando l'area cambia stato
+    // se diventa ALERT o DANGER → AREA_ALERT a tutti i worker presenti nell'area
+    // se torna OK → AREA_SAFE a tutti i worker presenti nell'area
+
     public void updateStatus(String areaId, int status) throws AreaNotFoundException {
         Area area = areaRepository.findById(areaId);
-        if (area == null) {
-            throw new AreaNotFoundException();
-        }
+        if (area == null) throw new AreaNotFoundException();
+
         area.setStatus(status);
         areaRepository.update(area);
+
+        if (status == Area.ALERT || status == Area.DANGER) {
+            FaroMessage message = new FaroMessage(
+                    RabbitMQMessageTypes.AREA_ALERT,
+                    new AreaAlertMessage(areaId, area.getName(), status,
+                            area.getCurrentTemperature(), area.getCurrentHumidity())
+            );
+            // manda a tutti i worker presenti nell'area
+            if (area.getWorkerIdsInArea() != null) {
+                for (String workerId : area.getWorkerIdsInArea()) {
+                    try {
+                        rabbitMQManager.publish(
+                                RabbitMQConstants.EXCHANGE_INBOX,
+                                workerId,
+                                RabbitMQMessageTypes.AREA_ALERT,
+                                message
+                        );
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            // broadcast sull'exchange alerts
+            try {
+                rabbitMQManager.publish(
+                        RabbitMQConstants.EXCHANGE_ALERTS,
+                        areaId,
+                        RabbitMQMessageTypes.AREA_ALERT,
+                        message
+                );
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        } else if (status == Area.OK) {
+            FaroMessage message = new FaroMessage(
+                    RabbitMQMessageTypes.AREA_SAFE,
+                    new AreaSafeMessage(areaId, area.getName())
+            );
+
+            if (area.getWorkerIdsInArea() != null) {
+                for (String workerId : area.getWorkerIdsInArea()) {
+                    try {
+                        rabbitMQManager.publish(
+                                RabbitMQConstants.EXCHANGE_INBOX,
+                                workerId,
+                                RabbitMQMessageTypes.AREA_SAFE,
+                                message
+                        );
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            try {
+                rabbitMQManager.publish(
+                        RabbitMQConstants.EXCHANGE_ALERTS,
+                        areaId,
+                        RabbitMQMessageTypes.AREA_SAFE,
+                        message
+                );
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void updateSensorReadings(String areaId, double temperature, double humidity) throws AreaNotFoundException {

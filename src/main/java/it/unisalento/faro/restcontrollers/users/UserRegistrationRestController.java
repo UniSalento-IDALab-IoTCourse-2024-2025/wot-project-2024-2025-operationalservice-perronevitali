@@ -2,7 +2,7 @@ package it.unisalento.faro.restcontrollers.users;
 
 import it.unisalento.faro.dto.login_and_registration.WorkerRegistrationDTO;
 import it.unisalento.faro.dto.main.WorkerDTO;
-import it.unisalento.faro.dto.list.WorkersListDTO;
+import it.unisalento.faro.dto.main.list.WorkersListDTO;
 import it.unisalento.faro.dto.responseDTO.RegistrationResponseDTO;
 import it.unisalento.faro.exceptions.EmailAlreadyExistsException;
 import it.unisalento.faro.service.users.WorkerService;

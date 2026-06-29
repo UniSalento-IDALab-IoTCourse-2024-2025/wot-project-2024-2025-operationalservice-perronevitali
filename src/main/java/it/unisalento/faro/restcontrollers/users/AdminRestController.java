@@ -2,7 +2,7 @@ package it.unisalento.faro.restcontrollers.users;
 
 import it.unisalento.faro.dto.login_and_registration.AdminRegistrationDTO;
 import it.unisalento.faro.dto.main.AdminDTO;
-import it.unisalento.faro.dto.list.AdminsListDTO;
+import it.unisalento.faro.dto.main.list.AdminsListDTO;
 import it.unisalento.faro.dto.responseDTO.AdminResponseDTO;
 import it.unisalento.faro.exceptions.EmailAlreadyExistsException;
 import it.unisalento.faro.service.users.AdminService;

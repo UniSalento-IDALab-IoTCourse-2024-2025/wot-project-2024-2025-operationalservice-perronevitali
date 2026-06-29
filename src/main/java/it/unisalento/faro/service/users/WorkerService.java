@@ -1,9 +1,13 @@
 package it.unisalento.faro.service.users;
 
 import io.jsonwebtoken.io.IOException;
+import it.unisalento.faro.configuration.rabbitmq.RabbitMQConstants;
 import it.unisalento.faro.configuration.rabbitmq.RabbitMQManager;
+import it.unisalento.faro.configuration.rabbitmq.RabbitMQMessageTypes;
 import it.unisalento.faro.domain.User;
 import it.unisalento.faro.domain.Worker;
+import it.unisalento.faro.dto.messagesDTO.AreaUnauthorizedMessage;
+import it.unisalento.faro.dto.messagesDTO.FaroMessage;
 import it.unisalento.faro.dto.login_and_registration.WorkerRegistrationDTO;
 import it.unisalento.faro.dto.main.WorkerDTO;
 import it.unisalento.faro.exceptions.EmailAlreadyExistsException;
@@ -124,6 +128,21 @@ public class WorkerService {
 
         Worker worker = (Worker) user;
         worker.setCurrentAreaId(areaId);
+
+        if (worker.getAuthorizedAreaIds() == null || !worker.getAuthorizedAreaIds().contains(areaId)) {
+
+            FaroMessage message = new FaroMessage(RabbitMQMessageTypes.AREA_UNAUTHORIZED, new AreaUnauthorizedMessage(areaId));
+            try {
+                rabbitMQManager.publish(
+                        RabbitMQConstants.EXCHANGE_INBOX,
+                        worker.getId(),
+                        RabbitMQMessageTypes.AREA_UNAUTHORIZED,
+                        message
+                );
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         userRepository.update(worker);
         return toWorkerDTO(worker);

@@ -1,4 +1,4 @@
-package it.unisalento.faro.dto.list;
+package it.unisalento.faro.dto.main.list;
 
 import it.unisalento.faro.dto.main.AreaDTO;
 
