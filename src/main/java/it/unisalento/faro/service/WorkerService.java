@@ -133,7 +133,7 @@ public class WorkerService {
         worker.setCurrentAreaId(areaId);
         userRepository.update(worker);
 
-        // verifica autorizzazione e notifica worker se area non autorizzata
+        // verifica autorizzazione inoltre notifica worker se area non autorizzata
         if (worker.getAuthorizedAreaIds() == null || !worker.getAuthorizedAreaIds().contains(areaId)) {
             try {
                 rabbitMQManager.publish(
