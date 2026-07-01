@@ -27,10 +27,6 @@ public class RabbitMQManager {
     private Channel channel;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    // ---------------------------------------------------------------
-    // Startup
-    // ---------------------------------------------------------------
-
     void onStart(@Observes StartupEvent ev) {
         try {
             Connection connection = rabbitMQClient.connect();
@@ -41,10 +37,6 @@ public class RabbitMQManager {
         }
     }
 
-    // ---------------------------------------------------------------
-    // Dichiarazione exchange
-    // ---------------------------------------------------------------
-
     private void declareExchanges() throws IOException {
         // app → backend
         channel.exchangeDeclare(RabbitMQConstants.EXCHANGE_OUTBOX, "direct", true);
@@ -53,10 +45,6 @@ public class RabbitMQManager {
         // inter-servizio verso OperationalService
         channel.exchangeDeclare(RabbitMQConstants.EXCHANGE_AREA_UPDATES, "direct", true);
     }
-
-    // ---------------------------------------------------------------
-    // Code per utente (create alla registrazione)
-    // ---------------------------------------------------------------
 
     public void declareUserQueue(String userId) throws IOException {
         String inboxQueue  = RabbitMQConstants.QUEUE_INBOX_PREFIX  + userId;
@@ -70,10 +58,6 @@ public class RabbitMQManager {
 
         subscribeToUserOutbox(outboxQueue, userId);
     }
-
-    // ---------------------------------------------------------------
-    // Consumer outbox utente (app → backend)
-    // ---------------------------------------------------------------
 
     private void subscribeToUserOutbox(String queueName, String userId) throws IOException {
         channel.basicConsume(queueName, false, buildConsumer((messageType, body) -> {
@@ -114,10 +98,6 @@ public class RabbitMQManager {
         );
     }
 
-    // ---------------------------------------------------------------
-    // Publisher
-    // ---------------------------------------------------------------
-
     public void publish(String exchange, String routingKey,
                         String messageType, Object dto) throws IOException {
         AMQP.BasicProperties properties = new AMQP.BasicProperties.Builder()
@@ -133,10 +113,6 @@ public class RabbitMQManager {
                 payload.getBytes(StandardCharsets.UTF_8)
         );
     }
-
-    // ---------------------------------------------------------------
-    // Consumer factory
-    // ---------------------------------------------------------------
 
     private DefaultConsumer buildConsumer(MessageHandler handler) {
         return new DefaultConsumer(channel) {

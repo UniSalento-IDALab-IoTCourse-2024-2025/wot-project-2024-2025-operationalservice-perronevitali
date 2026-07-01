@@ -45,7 +45,6 @@ public class WorkerService {
     }
 
     public List<WorkerDTO> getAllWorkersByArea(String areaId) {
-        // uso Document BSON per evitare ambiguità con PanacheQL su MongoDB
         List<User> workers = userRepository.list(
                 new Document("_t", "worker").append("currentAreaId", areaId)
         );
@@ -134,18 +133,14 @@ public class WorkerService {
         worker.setCurrentAreaId(areaId);
         userRepository.update(worker);
 
-        // verifica autorizzazione — notifica worker se area non autorizzata
-        if (worker.getAuthorizedAreaIds() == null
-                || !worker.getAuthorizedAreaIds().contains(areaId)) {
+        // verifica autorizzazione e notifica worker se area non autorizzata
+        if (worker.getAuthorizedAreaIds() == null || !worker.getAuthorizedAreaIds().contains(areaId)) {
             try {
                 rabbitMQManager.publish(
                         RabbitMQConstants.EXCHANGE_INBOX,
                         worker.getId(),
                         RabbitMQMessageTypes.AREA_UNAUTHORIZED,
-                        new FaroMessage(
-                                RabbitMQMessageTypes.AREA_UNAUTHORIZED,
-                                new AreaUnauthorizedMessage(areaId)
-                        )
+                        new FaroMessage(RabbitMQMessageTypes.AREA_UNAUTHORIZED, new AreaUnauthorizedMessage(areaId))
                 );
             } catch (IOException e) {
                 e.printStackTrace();
