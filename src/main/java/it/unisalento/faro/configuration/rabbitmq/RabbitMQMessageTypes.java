@@ -3,11 +3,11 @@ package it.unisalento.faro.configuration.rabbitmq;
 // SHARED
 public final class RabbitMQMessageTypes {
 
-    // app → backend
+    // app -> backend
     public static final String POSITION_UPDATE   = "POSITION_UPDATE";
     public static final String DIRECT_MESSAGE    = "DIRECT_MESSAGE";
 
-    // backend → app
+    // backend -> app
     public static final String TASK_ASSIGNED     = "TASK_ASSIGNED";
     public static final String TASK_REJECTED     = "TASK_REJECTED";
     public static final String AREA_ALERT        = "AREA_ALERT";
