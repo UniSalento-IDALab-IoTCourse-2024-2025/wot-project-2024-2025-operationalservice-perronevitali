@@ -1,36 +1,31 @@
 stages:
-  - test
   - build
   - deploy
 
-run_tests:
-  stage: test
-  image: gradle:latest
-  before_script:
-    - chmod +x gradlew
-  script:
-    - ./gradlew test
-
-services:
-  - name: mongo:5.0
-    alias: UserMongoFARO
-
-build_image:
+build:
   stage: build
-  image: gradle:latest
-  before_script:
-    - chmod +x gradlew
+  tags:
+    - raspberry
   script:
-    - ./gradlew build
+    - ./gradlew quarkusBuild
+  artifacts:
+    paths:
+      - build/UserServiceFARO-0.0.1-SNAPSHOT-runner.jar
+    expire_in: 1 hour
+  only:
+    - main
 
 deploy:
   stage: deploy
-  image: gradle:latest
-  before_script:
-    - chmod 600 $AWS_SECRET_ACCESS_KEY
-    - chmod +x gradlew
-    - ./gradlew build
+  tags:
+    - raspberry
   script:
-    - scp -o StrictHostKeyChecking=no -i $AWS_SECRET_ACCESS_KEY build/UserServiceFARO-0.0.1-SNAPSHOT-runner.jar ubuntu@54.210.170.92:/home/ubuntu/UserService
-    - scp -o StrictHostKeyChecking=no -i $AWS_SECRET_ACCESS_KEY docker-compose.yml ubuntu@54.210.170.92:/home/ubuntu/UserService
-    - ssh -o StrictHostKeyChecking=no -i $AWS_SECRET_ACCESS_KEY ubuntu@54.210.170.92 "sudo docker kill mysbaimage; sudo docker kill mongodbimage; cd UserService; sudo docker compose up -d"
+    # genera il .env con i valori corretti per Linux / Raspberry Pi
+    - echo "JWT_SECRET=${JWT_SECRET}" > .env
+    - echo "QUARKUS_RABBITMQCLIENT_HOSTNAME=${QUARKUS_RABBITMQCLIENT_HOSTNAME}" >> .env
+    - echo "QUARKUS_HTTP_PORT=8180" >> .env
+    # riavvia il container con il JAR aggiornato
+    - docker compose -f docker-compose.arm.yml down
+    - docker compose -f docker-compose.arm.yml up -d
+  only:
+    - main

@@ -1,0 +1,40 @@
+services:
+  UserMongoFARO:
+    image: mongo:5.0
+    platform: linux/arm64
+    container_name: UserMongoFARO
+    ports:
+      - "27017:27017"
+    volumes:
+      - user-mongo-data:/data/db
+    restart: unless-stopped
+    networks:
+      - faro-net
+
+  UserServiceFARO:
+    image: eclipse-temurin:21-jre
+    platform: linux/arm64
+    container_name: UserServiceFARO
+    ports:
+      - "8180:8180"
+      - "8100:8100"
+    expose:
+      - "8100"
+    depends_on:
+      - UserMongoFARO
+    networks:
+      - faro-net
+    volumes:
+      - ./build/UserServiceFARO-0.0.1-SNAPSHOT-runner.jar:/app/app.jar
+    working_dir: /app
+    env_file:
+      - .env
+    restart: unless-stopped
+    entrypoint: java -Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8100 -jar /app/app.jar
+
+volumes:
+  user-mongo-data:
+
+networks:
+  faro-net:
+    driver: "bridge"
