@@ -1,4 +1,22 @@
 services:
+
+  RabbitMQFARO:
+    image: rabbitmq:3.12-management
+    platform: linux/arm64
+    container_name: RabbitMQFARO
+    ports:
+      - "5672:5672"
+      - "15672:15672"    # Management UI — http://<ip-raspberry>:15672  (FARO / FARO)
+      - "15674:15674"    # WebSocket STOMP — app mobile
+    environment:
+      RABBITMQ_DEFAULT_USER: FARO
+      RABBITMQ_DEFAULT_PASS: FARO
+    command: >
+      bash -c "rabbitmq-plugins enable rabbitmq_web_stomp && rabbitmq-server"
+    restart: unless-stopped
+    networks:
+      - faro-net
+
   UserMongoFARO:
     image: mongo:5.0
     platform: linux/arm64
@@ -22,6 +40,7 @@ services:
       - "8100"
     depends_on:
       - UserMongoFARO
+      - RabbitMQFARO
     networks:
       - faro-net
     volumes:
