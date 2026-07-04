@@ -18,7 +18,7 @@ build:
 deploy:
   stage: deploy
   tags:
-    - raspberry
+    - RaspberryPi
   script:
     # genera il .env con i valori corretti per Linux / Raspberry Pi
     - echo "JWT_SECRET=${JWT_SECRET}" > .env
