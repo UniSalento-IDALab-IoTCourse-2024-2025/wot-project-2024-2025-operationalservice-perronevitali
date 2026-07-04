@@ -6,6 +6,8 @@ build:
   stage: build
   tags:
     - RaspberryPi
+  variables:
+    JAVA_HOME: /usr/lib/jvm/java-21-openjdk-arm64
   script:
     - ./gradlew quarkusBuild
   artifacts:
@@ -20,11 +22,9 @@ deploy:
   tags:
     - RaspberryPi
   script:
-    # genera il .env con i valori corretti per Linux / Raspberry Pi
     - echo "JWT_SECRET=${JWT_SECRET}" > .env
     - echo "QUARKUS_RABBITMQCLIENT_HOSTNAME=${QUARKUS_RABBITMQCLIENT_HOSTNAME}" >> .env
     - echo "QUARKUS_HTTP_PORT=8180" >> .env
-    # riavvia il container con il JAR aggiornato
     - docker compose -f docker-compose.arm.yml down
     - docker compose -f docker-compose.arm.yml up -d
   only:
