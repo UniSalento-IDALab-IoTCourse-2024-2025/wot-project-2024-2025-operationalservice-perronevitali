@@ -1,4 +1,5 @@
 services:
+
   RabbitMQFARO:
     image: rabbitmq:3.12-management
     platform: linux/arm64
@@ -12,6 +13,8 @@ services:
       RABBITMQ_DEFAULT_PASS: FARO
     command: >
       bash -c "rabbitmq-plugins enable rabbitmq_web_stomp && rabbitmq-server"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
     restart: unless-stopped
     networks:
       - faro-net
@@ -33,7 +36,7 @@ services:
     platform: linux/arm64
     container_name: MongoExpressFARO
     ports:
-      - "8280:8280"      # UI — http://<ip-raspberry>:8081  (FARO / FARO)
+      - "8280:8280"
     environment:
       ME_CONFIG_MONGODB_SERVER: UserMongoFARO
       ME_CONFIG_MONGODB_PORT: 27017
@@ -69,6 +72,7 @@ services:
 
 volumes:
   user-mongo-data:
+  rabbitmq-data:
 
 networks:
   faro-net:
