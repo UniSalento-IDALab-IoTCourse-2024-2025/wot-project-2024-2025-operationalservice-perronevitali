@@ -145,6 +145,7 @@ public class WorkerService {
                                 new AreaUnauthorizedMessage(areaId)
                         )
                 );
+                System.out.println("AREA_UNAUTHORIZED pubblicato per area: " + areaId);
             } catch (IOException e) {
                 e.printStackTrace();
             }
