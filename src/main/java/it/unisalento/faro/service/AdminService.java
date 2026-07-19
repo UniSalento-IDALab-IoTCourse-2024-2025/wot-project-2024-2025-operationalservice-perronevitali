@@ -3,6 +3,7 @@ package it.unisalento.faro.service;
 import io.jsonwebtoken.io.IOException;
 import it.unisalento.faro.configuration.rabbitmq.RabbitMQManager;
 import it.unisalento.faro.domain.Admin;
+import it.unisalento.faro.domain.Role;
 import it.unisalento.faro.domain.User;
 import it.unisalento.faro.dto.login_and_registration.AdminRegistrationDTO;
 import it.unisalento.faro.dto.main.AdminDTO;
@@ -66,6 +67,7 @@ public class AdminService {
         admin.setCognome(registrationDTO.getCognome());
         admin.setEmail(registrationDTO.getEmail());
         admin.setPassword(passwordEncoder.encode(registrationDTO.getPassword()));
+        admin.setRole(Role.ADMIN);
         admin.setManagedAreaId(registrationDTO.getManagedAreaId());
 
         userRepository.persist(admin);
@@ -123,6 +125,12 @@ public class AdminService {
         dto.setNome(admin.getNome());
         dto.setCognome(admin.getCognome());
         dto.setEmail(admin.getEmail());
+        dto.setCurrentAreaId(admin.getCurrentAreaId());
+        if (admin.getRole() != null) {
+            dto.setRole(admin.getRole().name());
+        } else {
+            dto.setRole("ADMIN");
+        }
         dto.setManagedAreaId(admin.getManagedAreaId());
         return dto;
     }

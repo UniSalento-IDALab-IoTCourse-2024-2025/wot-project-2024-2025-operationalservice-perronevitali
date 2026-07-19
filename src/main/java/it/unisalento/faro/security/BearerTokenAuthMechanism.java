@@ -13,13 +13,6 @@ import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Estrae il Bearer token dall'header Authorization e lo passa
- * al JwtIdentityProvider per la validazione.
- *
- * Senza questo meccanismo, Quarkus non sa come convertire
- * "Authorization: Bearer <token>" in un TokenAuthenticationRequest.
- */
 @ApplicationScoped
 public class BearerTokenAuthMechanism implements HttpAuthenticationMechanism {
 

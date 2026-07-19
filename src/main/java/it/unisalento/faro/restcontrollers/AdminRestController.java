@@ -6,6 +6,7 @@ import it.unisalento.faro.dto.main.list.AdminsListDTO;
 import it.unisalento.faro.dto.responseDTO.AdminResponseDTO;
 import it.unisalento.faro.exceptions.EmailAlreadyExistsException;
 import it.unisalento.faro.service.AdminService;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admins")
+@RolesAllowed("ADMIN")
 public class AdminRestController {
 
     @Autowired

@@ -13,7 +13,6 @@ import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class JwtIdentityProvider implements IdentityProvider<TokenAuthenticationRequest> {
-
     @Inject
     JwtUtilities jwtUtilities;
 
@@ -57,11 +56,26 @@ public class JwtIdentityProvider implements IdentityProvider<TokenAuthentication
                             "Claim 'userId' mancante nel token JWT"
                     );
                 }
-                return QuarkusSecurityIdentity.builder()
+
+                String managedAreaId;
+                try {
+                    managedAreaId = jwtUtilities.extractClaim(token, claims ->
+                            claims.get("managedAreaId", String.class)
+                    );
+                } catch (Exception e) {
+                    managedAreaId = null;
+                }
+
+                var identityBuilder = QuarkusSecurityIdentity.builder()
                         .setPrincipal(new QuarkusPrincipal(username))
                         .addRole(ruolo)
-                        .addAttribute("userId", userId)
-                        .build();
+                        .addAttribute("userId", userId);
+
+                if (managedAreaId != null) {
+                    identityBuilder.addAttribute("managedAreaId", managedAreaId);
+                }
+
+                return identityBuilder.build();
             } catch (AuthenticationFailedException e) {
                 throw e;
             } catch (Exception e) {

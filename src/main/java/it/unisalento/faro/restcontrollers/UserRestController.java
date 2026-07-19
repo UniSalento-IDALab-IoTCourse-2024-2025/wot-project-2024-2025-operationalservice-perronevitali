@@ -6,6 +6,7 @@ import it.unisalento.faro.dto.responseDTO.UserResponseDTO;
 import it.unisalento.faro.exceptions.EmailChangeNotAllowedException;
 import it.unisalento.faro.exceptions.UserNotFoundException;
 import it.unisalento.faro.service.UserService;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,11 @@ public class UserRestController {
     @Autowired
     UserService userService;
 
+    // NUOVO - elenco di tutti gli utenti (admin + worker misti): solo ADMIN.
+    // E' anche l'endpoint che finora restituiva UserDTO senza campo "role" -
+    // ora lo restituisce, risolvendo il problema del frontend che non poteva
+    // distinguere admin da worker in questa lista.
+    @RolesAllowed("ADMIN")
     @RequestMapping(value = "/",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
@@ -38,6 +44,7 @@ public class UserRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @RolesAllowed({"ADMIN", "WORKER"})
     @RequestMapping(value = "/{id}",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
@@ -64,6 +71,7 @@ public class UserRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @RolesAllowed({"ADMIN", "WORKER"})
     @RequestMapping(value = "/email",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
@@ -91,6 +99,7 @@ public class UserRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @RolesAllowed({"ADMIN", "WORKER"})
     @RequestMapping(value = "/{id}",
             method = RequestMethod.PUT,
             produces = MediaType.APPLICATION_JSON_VALUE,
@@ -121,6 +130,7 @@ public class UserRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @RolesAllowed({"ADMIN", "WORKER"})
     @RequestMapping(value = "/email",
             method = RequestMethod.PUT,
             produces = MediaType.APPLICATION_JSON_VALUE,
@@ -152,6 +162,8 @@ public class UserRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    // NUOVO - eliminazione: solo ADMIN
+    @RolesAllowed("ADMIN")
     @RequestMapping(value = "/{id}",
             method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteById(@PathVariable String id) {
@@ -177,6 +189,7 @@ public class UserRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @RolesAllowed("ADMIN")
     @RequestMapping(value = "/email",
             method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteByEmail(@RequestParam("email") String rawEmail) {

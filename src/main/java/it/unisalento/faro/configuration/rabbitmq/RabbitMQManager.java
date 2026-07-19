@@ -8,6 +8,7 @@ import it.unisalento.faro.dto.messagesDTO.DirectMessage;
 import it.unisalento.faro.dto.messagesDTO.FaroMessage;
 import it.unisalento.faro.dto.messagesDTO.PositionUpdateMessage;
 import it.unisalento.faro.dto.otherDTO.AreaAuthorizationDTO;
+import it.unisalento.faro.service.UserService;
 import it.unisalento.faro.service.WorkerService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -24,6 +25,9 @@ public class RabbitMQManager {
 
     @Inject
     WorkerService workerService;
+
+    @Inject
+    UserService userService;
 
     private Channel channel;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -50,11 +54,6 @@ public class RabbitMQManager {
         channel.exchangeDeclare(RabbitMQConstants.EXCHANGE_AREAS, "topic", true);
     }
 
-    /**
-     * Dichiara e consuma la coda su cui OperationalService pubblica
-     * AUTHORIZE_AREA / REVOKE_AREA (routing key "authorization",
-     * stesso exchange EXCHANGE_AREA_UPDATES già usato per POSITION_UPDATE).
-     */
     private void declareAuthorizationQueue() throws IOException {
         channel.queueDeclare(RabbitMQConstants.QUEUE_AUTHORIZATION, true, false, false, null);
         channel.queueBind(
@@ -105,7 +104,7 @@ public class RabbitMQManager {
         PositionUpdateMessage positionUpdate = mapper.convertValue(
                 message.getPayload(), PositionUpdateMessage.class
         );
-        workerService.updateCurrentArea(
+        userService.updateCurrentArea(
                 userId,
                 positionUpdate.getAreaId(),
                 positionUpdate.getPreviousAreaId()

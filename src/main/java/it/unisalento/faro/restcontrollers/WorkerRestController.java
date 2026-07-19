@@ -4,6 +4,7 @@ import it.unisalento.faro.dto.main.WorkerDTO;
 import it.unisalento.faro.dto.main.list.WorkersListDTO;
 import it.unisalento.faro.dto.responseDTO.WorkerResponseDTO;
 import it.unisalento.faro.service.WorkerService;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,8 @@ public class WorkerRestController {
     @Autowired
     WorkerService workerService;
 
+    // NUOVO - elenco completo dei worker: solo ADMIN (gestione)
+    @RolesAllowed("ADMIN")
     @RequestMapping(value = "/",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
@@ -36,6 +39,11 @@ public class WorkerRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    // NUOVO - dettaglio worker: ADMIN o il worker stesso (coerente con
+    // FARO_REST_Endpoints.md, "Auth: ADMIN, WORKER". NOTA: non c'e' ancora
+    // un controllo che l'id richiesto coincida col chiamante se WORKER -
+    // segnalato come miglioramento futuro, non bloccante per la Fase 1)
+    @RolesAllowed({"ADMIN", "WORKER"})
     @RequestMapping(value = "/{id}",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
@@ -62,6 +70,7 @@ public class WorkerRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @RolesAllowed({"ADMIN", "WORKER"})
     @RequestMapping(value = "/email",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
@@ -89,6 +98,7 @@ public class WorkerRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @RolesAllowed({"ADMIN", "WORKER"})
     @RequestMapping(value = "/{id}",
             method = RequestMethod.PUT,
             produces = MediaType.APPLICATION_JSON_VALUE,
@@ -116,6 +126,8 @@ public class WorkerRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    // NUOVO - assegnazione aree autorizzate: solo ADMIN
+    @RolesAllowed("ADMIN")
     @RequestMapping(value = "/{id}/areas",
             method = RequestMethod.PUT,
             produces = MediaType.APPLICATION_JSON_VALUE,
@@ -143,6 +155,8 @@ public class WorkerRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    // NUOVO - eliminazione worker: solo ADMIN
+    @RolesAllowed("ADMIN")
     @RequestMapping(value = "/{id}",
             method = RequestMethod.DELETE)
     public ResponseEntity<?> deleteById(@PathVariable String id) {
@@ -168,6 +182,7 @@ public class WorkerRestController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @RolesAllowed({"ADMIN", "WORKER"})
     @RequestMapping(value = "/{id}/areas/authorized",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)

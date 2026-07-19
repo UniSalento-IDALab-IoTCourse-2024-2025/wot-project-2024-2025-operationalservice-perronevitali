@@ -17,6 +17,8 @@ public class User {
     private String cognome;
     private String email;
     private String password;
+    private Role role;
+    private String currentAreaId;
 
     public String getId() {
         return id;
@@ -47,5 +49,17 @@ public class User {
     }
     public void setPassword(String password) {
         this.password = password;
+    }
+    public Role getRole() {
+        return role;
+    }
+    public void setRole(Role role) {
+        this.role = role;
+    }
+    public String getCurrentAreaId() {
+        return currentAreaId;
+    }
+    public void setCurrentAreaId(String currentAreaId) {
+        this.currentAreaId = currentAreaId;
     }
 }

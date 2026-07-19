@@ -1,6 +1,7 @@
 package it.unisalento.faro.configuration;
 
 import it.unisalento.faro.domain.Admin;
+import it.unisalento.faro.domain.Role;
 import it.unisalento.faro.repositories.UserRepository;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -26,14 +27,12 @@ public class AdminSeeder {
                 admin.setCognome("Admin");
                 admin.setEmail("admin@faro.it");
                 admin.setPassword(passwordEncoder.encode("admin123"));
+                admin.setRole(Role.ADMIN);
+                admin.setManagedAreaId(null);
                 userRepository.persist(admin);
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
-
-
-
-
 }
