@@ -67,66 +67,15 @@ public class WorkerService {
         return toWorkerDTO(user);
     }
 
-    public WorkerDTO register(WorkerRegistrationDTO registrationDTO) throws EmailAlreadyExistsException {
-        Optional<User> existingUser = userRepository.findByEmail(registrationDTO.getEmail());
-        if (existingUser.isPresent()) {
-            throw new EmailAlreadyExistsException();
+    public List<WorkerDTO> getWorkersByIds(List<String> ids) {
+        List<User> users = userRepository.findByIds(ids);
+        List<WorkerDTO> result = new ArrayList<>();
+        for (User user : users) {
+            if (user instanceof Worker) {
+                result.add(toWorkerDTO(user));
+            }
         }
-
-        Worker worker = new Worker();
-        worker.setNome(registrationDTO.getNome());
-        worker.setCognome(registrationDTO.getCognome());
-        worker.setEmail(registrationDTO.getEmail());
-        worker.setPassword(passwordEncoder.encode(registrationDTO.getPassword()));
-        worker.setRole(Role.WORKER); // NUOVO
-        worker.setAuthorizedAreaIds(new ArrayList<>());
-
-        userRepository.persist(worker);
-
-        try {
-            rabbitMQManager.declareUserQueue(worker.getId());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return toWorkerDTO(worker);
-    }
-
-    public WorkerDTO updateWorkerById(String id, WorkerDTO workerDto) throws Exception {
-        User user = userRepository.findById(id);
-        if (user == null || !(user instanceof Worker)) {
-            throw new Exception("Worker non trovato");
-        }
-
-        Worker worker = (Worker) user;
-        worker.setNome(workerDto.getNome());
-        worker.setCognome(workerDto.getCognome());
-
-        userRepository.update(worker);
-        return toWorkerDTO(worker);
-    }
-
-    public WorkerDTO assignAreas(String id, ArrayList<String> areaIds) throws Exception {
-        User user = userRepository.findById(id);
-        if (user == null || !(user instanceof Worker)) {
-            throw new Exception("Worker non trovato");
-        }
-
-        Worker worker = (Worker) user;
-        worker.setAuthorizedAreaIds(areaIds);
-
-        userRepository.update(worker);
-        return toWorkerDTO(worker);
-    }
-
-    public WorkerDTO deleteWorkerById(String id) throws Exception {
-        User user = userRepository.findById(id);
-        if (user == null || !(user instanceof Worker)) {
-            throw new Exception("Worker non trovato");
-        }
-
-        userRepository.deleteById(id);
-        return toWorkerDTO(user);
+        return result;
     }
 
     public List<WorkerDTO> getAuthorizedWorkersByArea(String areaId) {
@@ -154,6 +103,58 @@ public class WorkerService {
         return worker.getAuthorizedAreaIds();
     }
 
+    public WorkerDTO register(WorkerRegistrationDTO registrationDTO) throws EmailAlreadyExistsException {
+        Optional<User> existingUser = userRepository.findByEmail(registrationDTO.getEmail());
+        if (existingUser.isPresent()) {
+            throw new EmailAlreadyExistsException();
+        }
+
+        Worker worker = new Worker();
+        worker.setNome(registrationDTO.getNome());
+        worker.setCognome(registrationDTO.getCognome());
+        worker.setEmail(registrationDTO.getEmail());
+        worker.setPassword(passwordEncoder.encode(registrationDTO.getPassword()));
+        worker.setRole(Role.WORKER); // NUOVO
+        worker.setAuthorizedAreaIds(new ArrayList<>());
+
+        userRepository.persist(worker);
+
+        try {
+            rabbitMQManager.declareUserQueue(worker.getId());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return toWorkerDTO(worker);
+    }
+
+    public WorkerDTO assignAreas(String id, ArrayList<String> areaIds) throws Exception {
+        User user = userRepository.findById(id);
+        if (user == null || !(user instanceof Worker)) {
+            throw new Exception("Worker non trovato");
+        }
+
+        Worker worker = (Worker) user;
+        worker.setAuthorizedAreaIds(areaIds);
+
+        userRepository.update(worker);
+        return toWorkerDTO(worker);
+    }
+
+    public WorkerDTO updateWorkerById(String id, WorkerDTO workerDto) throws Exception {
+        User user = userRepository.findById(id);
+        if (user == null || !(user instanceof Worker)) {
+            throw new Exception("Worker non trovato");
+        }
+
+        Worker worker = (Worker) user;
+        worker.setNome(workerDto.getNome());
+        worker.setCognome(workerDto.getCognome());
+
+        userRepository.update(worker);
+        return toWorkerDTO(worker);
+    }
+
     public void addAuthorizedArea(String workerId, String areaId) {
         User user = userRepository.findById(workerId);
         if (!(user instanceof Worker worker)) return;
@@ -172,6 +173,16 @@ public class WorkerService {
         if (worker.getAuthorizedAreaIds() != null && worker.getAuthorizedAreaIds().remove(areaId)) {
             userRepository.update(worker);
         }
+    }
+
+    public WorkerDTO deleteWorkerById(String id) throws Exception {
+        User user = userRepository.findById(id);
+        if (user == null || !(user instanceof Worker)) {
+            throw new Exception("Worker non trovato");
+        }
+
+        userRepository.deleteById(id);
+        return toWorkerDTO(user);
     }
 
     public WorkerDTO toWorkerDTO(User user) {

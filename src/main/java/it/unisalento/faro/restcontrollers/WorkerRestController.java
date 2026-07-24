@@ -6,6 +6,7 @@ import it.unisalento.faro.dto.responseDTO.WorkerResponseDTO;
 import it.unisalento.faro.service.WorkerService;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -94,31 +95,35 @@ public class WorkerRestController {
     }
 
     @RolesAllowed({"ADMIN", "WORKER"})
-    @RequestMapping(value = "/{id}",
-            method = RequestMethod.PUT,
-            produces = MediaType.APPLICATION_JSON_VALUE,
-            consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> updateById(@PathVariable String id, @RequestBody WorkerDTO workerDto) {
+    @RequestMapping(value = "/by-ids",
+            method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> findByIds(@RequestParam("ids") String rawIds) {
         WorkerResponseDTO responseDTO = new WorkerResponseDTO();
 
-        try {
-            WorkerDTO updated = workerService.updateWorkerById(id, workerDto);
-
-            List<WorkerDTO> list = new ArrayList<>();
-            list.add(updated);
-
-            WorkersListDTO listDTO = new WorkersListDTO();
-            listDTO.setWorkersList(list);
-
-            responseDTO.setResult(WorkerResponseDTO.OK);
-            responseDTO.setMessage("Worker aggiornato con successo");
-            responseDTO.setWorkers(listDTO);
-        } catch (Exception e) {
-            responseDTO.setResult(WorkerResponseDTO.WORKER_NOT_FOUND);
-            responseDTO.setMessage("Worker non trovato");
+        List<String> ids = new ArrayList<>();
+        for (String id : rawIds.split(",")) {
+            String trimmed = id.trim();
+            if (!trimmed.isEmpty()) {
+                ids.add(trimmed);
+            }
         }
 
-        return ResponseEntity.ok(responseDTO);
+        try {
+            List<WorkerDTO> workers = workerService.getWorkersByIds(ids);
+
+            WorkersListDTO listDTO = new WorkersListDTO();
+            listDTO.setWorkersList(workers);
+
+            responseDTO.setResult(WorkerResponseDTO.OK);
+            responseDTO.setMessage("Ecco i worker richiesti");
+            responseDTO.setWorkers(listDTO);
+            return ResponseEntity.ok(responseDTO);
+        } catch (Exception e) {
+            responseDTO.setResult(-1);
+            responseDTO.setMessage("Uno o più id non validi");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDTO);
+        }
     }
 
     @RolesAllowed("ADMIN")
@@ -140,6 +145,34 @@ public class WorkerRestController {
 
             responseDTO.setResult(WorkerResponseDTO.OK);
             responseDTO.setMessage("Aree assegnate con successo");
+            responseDTO.setWorkers(listDTO);
+        } catch (Exception e) {
+            responseDTO.setResult(WorkerResponseDTO.WORKER_NOT_FOUND);
+            responseDTO.setMessage("Worker non trovato");
+        }
+
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @RolesAllowed({"ADMIN", "WORKER"})
+    @RequestMapping(value = "/{id}",
+            method = RequestMethod.PUT,
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updateById(@PathVariable String id, @RequestBody WorkerDTO workerDto) {
+        WorkerResponseDTO responseDTO = new WorkerResponseDTO();
+
+        try {
+            WorkerDTO updated = workerService.updateWorkerById(id, workerDto);
+
+            List<WorkerDTO> list = new ArrayList<>();
+            list.add(updated);
+
+            WorkersListDTO listDTO = new WorkersListDTO();
+            listDTO.setWorkersList(list);
+
+            responseDTO.setResult(WorkerResponseDTO.OK);
+            responseDTO.setMessage("Worker aggiornato con successo");
             responseDTO.setWorkers(listDTO);
         } catch (Exception e) {
             responseDTO.setResult(WorkerResponseDTO.WORKER_NOT_FOUND);
