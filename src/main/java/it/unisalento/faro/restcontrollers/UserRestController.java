@@ -8,6 +8,7 @@ import it.unisalento.faro.exceptions.UserNotFoundException;
 import it.unisalento.faro.service.UserService;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -65,6 +66,38 @@ public class UserRestController {
         }
 
         return ResponseEntity.ok(responseDTO);
+    }
+
+    @RolesAllowed({"ADMIN", "WORKER"})
+    @RequestMapping(value = "/by-ids",
+            method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> findByIds(@RequestParam("ids") String rawIds) {
+        UserResponseDTO responseDTO = new UserResponseDTO();
+
+        List<String> ids = new ArrayList<>();
+        for (String id : rawIds.split(",")) {
+            String trimmed = id.trim();
+            if (!trimmed.isEmpty()) {
+                ids.add(trimmed);
+            }
+        }
+
+        try {
+            List<UserDTO> users = userService.getUsersByIds(ids);
+
+            UsersListDTO listDTO = new UsersListDTO();
+            listDTO.setUsersList(users);
+
+            responseDTO.setResult(UserResponseDTO.OK);
+            responseDTO.setMessage("Ecco gli utenti richiesti");
+            responseDTO.setUsers(listDTO);
+            return ResponseEntity.ok(responseDTO);
+        } catch (Exception e) {
+            responseDTO.setResult(-1);
+            responseDTO.setMessage("Uno o più id non validi");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseDTO);
+        }
     }
 
     @RolesAllowed({"ADMIN", "WORKER"})

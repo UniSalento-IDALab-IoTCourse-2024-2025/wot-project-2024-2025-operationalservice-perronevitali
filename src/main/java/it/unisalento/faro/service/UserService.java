@@ -59,6 +59,15 @@ public class UserService {
         return toUserDTO(user);
     }
 
+    public List<UserDTO> getUsersByIds(List<String> ids) {
+        List<User> users = userRepository.findByIds(ids);
+        List<UserDTO> result = new ArrayList<>();
+        for (User user : users) {
+            result.add(toUserDTO(user));
+        }
+        return result;
+    }
+
     public UserDTO getUserByEmail(String email) throws UserNotFoundException {
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) {
