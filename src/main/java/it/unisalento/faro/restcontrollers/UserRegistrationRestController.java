@@ -6,6 +6,7 @@ import it.unisalento.faro.dto.main.list.WorkersListDTO;
 import it.unisalento.faro.dto.responseDTO.RegistrationResponseDTO;
 import it.unisalento.faro.exceptions.EmailAlreadyExistsException;
 import it.unisalento.faro.service.WorkerService;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,6 +23,7 @@ public class UserRegistrationRestController {
     @Autowired
     WorkerService workerService;
 
+    @RolesAllowed("ADMIN")
     @RequestMapping(value = "/",
             method = RequestMethod.POST,
             produces = MediaType.APPLICATION_JSON_VALUE,
