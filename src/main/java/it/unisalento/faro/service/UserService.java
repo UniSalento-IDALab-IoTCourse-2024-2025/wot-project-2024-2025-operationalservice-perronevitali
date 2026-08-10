@@ -146,6 +146,8 @@ public class UserService {
             throw new UserNotFoundException();
         }
 
+        String actualPreviousAreaId = user.getCurrentAreaId();
+
         user.setCurrentAreaId(areaId);
         userRepository.update(user);
 
@@ -173,9 +175,7 @@ public class UserService {
         }
 
         try {
-            PositionUpdateDTO positionUpdate = new PositionUpdateDTO(
-                    userId, areaId, previousAreaId, isUnauthorized
-            );
+            PositionUpdateDTO positionUpdate = new PositionUpdateDTO(userId, areaId, actualPreviousAreaId, isUnauthorized);
             rabbitMQManager.publish(
                     RabbitMQConstants.EXCHANGE_AREA_UPDATES,
                     RabbitMQConstants.ROUTING_KEY_POSITION,
