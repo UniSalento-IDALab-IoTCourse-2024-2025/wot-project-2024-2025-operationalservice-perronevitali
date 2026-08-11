@@ -9,8 +9,6 @@ import it.unisalento.faro.domain.User;
 import it.unisalento.faro.domain.Worker;
 import it.unisalento.faro.dto.login_and_registration.LoginDTO;
 import it.unisalento.faro.dto.main.UserDTO;
-import it.unisalento.faro.dto.messagesDTO.AreaUnauthorizedMessage;
-import it.unisalento.faro.dto.messagesDTO.FaroMessage;
 import it.unisalento.faro.dto.otherDTO.PositionUpdateDTO;
 import it.unisalento.faro.exceptions.EmailChangeNotAllowedException;
 import it.unisalento.faro.exceptions.UserNotFoundException;
@@ -153,25 +151,7 @@ public class UserService {
 
         boolean isUnauthorized = false;
         if (user instanceof Worker worker) {
-            isUnauthorized = worker.getAuthorizedAreaIds() == null
-                    || !worker.getAuthorizedAreaIds().contains(areaId);
-
-            if (isUnauthorized) {
-                try {
-                    rabbitMQManager.publish(
-                            RabbitMQConstants.EXCHANGE_AREAS,
-                            "area." + areaId,
-                            RabbitMQMessageTypes.AREA_UNAUTHORIZED,
-                            new FaroMessage(
-                                    RabbitMQMessageTypes.AREA_UNAUTHORIZED,
-                                    new AreaUnauthorizedMessage(areaId)
-                            )
-                    );
-                    System.out.println("AREA_UNAUTHORIZED pubblicato per area: " + areaId);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            isUnauthorized = worker.getAuthorizedAreaIds() == null || !worker.getAuthorizedAreaIds().contains(areaId);
         }
 
         try {
