@@ -7,6 +7,7 @@ import it.unisalento.faro.dto.responseDTO.UserResponseDTO;
 import it.unisalento.faro.exceptions.EmailChangeNotAllowedException;
 import it.unisalento.faro.exceptions.UserNotFoundException;
 import it.unisalento.faro.service.UserService;
+import io.vertx.ext.web.RoutingContext;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,9 @@ public class UserRestController {
 
     @Autowired
     UserService userService;
+
+    @Autowired
+    RoutingContext routingContext;
 
     @RolesAllowed("ADMIN")
     @RequestMapping(value = "/",
@@ -276,8 +280,8 @@ public class UserRestController {
     @RequestMapping(value = "/push-tokens",
             method = RequestMethod.GET,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getPushTokensForArea(@RequestParam("areaId") String areaId,
-                                                  @RequestHeader(value = "X-Internal-Secret", required = false) String secret) {
+    public ResponseEntity<?> getPushTokensForArea(@RequestParam("areaId") String areaId) {
+        String secret = routingContext.request().getHeader("X-Internal-Secret");
         try {
             List<String> tokens = userService.getPushTokensForArea(areaId, secret);
             return ResponseEntity.ok(tokens);
