@@ -25,6 +25,7 @@ deploy:
     - echo "JWT_SECRET=${JWT_SECRET}" > .env
     - echo "QUARKUS_RABBITMQCLIENT_HOSTNAME=${QUARKUS_RABBITMQCLIENT_HOSTNAME}" >> .env
     - echo "QUARKUS_HTTP_PORT=8180" >> .env
+    - echo "INTERNAL_SECRET=${INTERNAL_SECRET}" >> .env
     - docker compose -f docker-compose.arm.yml down
     - docker compose -f docker-compose.arm.yml up -d
   only:
