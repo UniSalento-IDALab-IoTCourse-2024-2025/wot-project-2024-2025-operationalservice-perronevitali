@@ -6,15 +6,18 @@ services:
     container_name: RabbitMQFARO
     ports:
       - "5672:5672"
-      - "15672:15672"    # Management UI — http://<ip-raspberry>:15672  (FARO / FARO)
-      - "15674:15674"    # WebSocket STOMP — app mobile
+      - "15672:15672"    # GUI  (FARO / FARO)
+      - "15674:15674"    # WebSocket STOMP
+      - "1883:1883"      # MQTT
+      - "15675:15675"    # WebSocket MQTT
     environment:
       RABBITMQ_DEFAULT_USER: FARO
       RABBITMQ_DEFAULT_PASS: FARO
     command: >
-      bash -c "rabbitmq-plugins enable rabbitmq_web_stomp && rabbitmq-server"
+      bash -c "rabbitmq-plugins enable rabbitmq_web_stomp rabbitmq_mqtt rabbitmq_web_mqtt && rabbitmq-server"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
+      - ./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     restart: unless-stopped
     networks:
       - faro-net
