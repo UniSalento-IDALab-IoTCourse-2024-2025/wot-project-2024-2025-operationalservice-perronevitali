@@ -14,6 +14,7 @@ import it.unisalento.faro.exceptions.EmailChangeNotAllowedException;
 import it.unisalento.faro.exceptions.UserNotFoundException;
 import it.unisalento.faro.repositories.UserRepository;
 import it.unisalento.faro.security.JwtUtilities;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,6 +37,9 @@ public class UserService {
 
     @Inject
     RabbitMQManager rabbitMQManager;
+
+    @ConfigProperty(name = "faro.internal.secret")
+    String internalSecret;
 
     public List<UserDTO> getAllUsers() {
         List<User> users = userRepository.listAll();
@@ -169,6 +173,38 @@ public class UserService {
         return toUserDTO(user);
     }
 
+    public UserDTO updatePushToken(String userId, String pushToken) throws UserNotFoundException {
+        User user = userRepository.findById(userId);
+        if (user == null) {
+            throw new UserNotFoundException();
+        }
+        user.setPushToken(pushToken);
+        userRepository.update(user);
+        return toUserDTO(user);
+    }
+
+    public List<String> getPushTokensForArea(String areaId, String suppliedSecret) throws SecurityException {
+        if (internalSecret == null || !internalSecret.equals(suppliedSecret)) {
+            throw new SecurityException("Secret interno non valido");
+        }
+
+        Set<String> tokens = new HashSet<>();
+
+        for (User worker : userRepository.findWorkersAuthorizedForArea(areaId)) {
+            if (worker.getPushToken() != null && !worker.getPushToken().isBlank()) {
+                tokens.add(worker.getPushToken());
+            }
+        }
+
+        for (User admin : userRepository.findAdminsForArea(areaId)) {
+            if (admin.getPushToken() != null && !admin.getPushToken().isBlank()) {
+                tokens.add(admin.getPushToken());
+            }
+        }
+
+        return new ArrayList<>(tokens);
+    }
+
     private UserDTO applyUpdate(User user, UserDTO userDto) throws EmailChangeNotAllowedException {
         if (!user.getEmail().equals(userDto.getEmail())) {
             throw new EmailChangeNotAllowedException();
@@ -189,6 +225,7 @@ public class UserService {
         dto.setCognome(user.getCognome());
         dto.setEmail(user.getEmail());
         dto.setCurrentAreaId(user.getCurrentAreaId());
+        dto.setPushToken(user.getPushToken());
         if (user.getRole() != null) {
             dto.setRole(user.getRole().name());
         } else if (user instanceof Admin) {

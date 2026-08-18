@@ -114,7 +114,7 @@ public class WorkerService {
         worker.setCognome(registrationDTO.getCognome());
         worker.setEmail(registrationDTO.getEmail());
         worker.setPassword(passwordEncoder.encode(registrationDTO.getPassword()));
-        worker.setRole(Role.WORKER); // NUOVO
+        worker.setRole(Role.WORKER);
         worker.setAuthorizedAreaIds(new ArrayList<>());
 
         userRepository.persist(worker);
@@ -192,6 +192,7 @@ public class WorkerService {
         dto.setNome(worker.getNome());
         dto.setCognome(worker.getCognome());
         dto.setEmail(worker.getEmail());
+        dto.setPushToken(worker.getPushToken());
         dto.setCurrentAreaId(worker.getCurrentAreaId());
         if (worker.getRole() != null) {
             dto.setRole(worker.getRole().name());

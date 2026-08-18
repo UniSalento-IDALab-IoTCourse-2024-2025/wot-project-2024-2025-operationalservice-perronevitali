@@ -29,6 +29,19 @@ public class UserRepository implements PanacheMongoRepositoryBase<User, String> 
         return find("email", email).firstResultOptional();
     }
 
+    public List<User> findWorkersAuthorizedForArea(String areaId) {
+        return list(new Document("_t", "worker").append("authorizedAreaIds", areaId));
+    }
+
+    public List<User> findAdminsForArea(String areaId) {
+        Document globalOrMatching = new Document("$or", List.of(
+                new Document("managedAreaId", areaId),
+                new Document("managedAreaId", new Document("$exists", false)),
+                new Document("managedAreaId", null)
+        ));
+        return list(new Document("_t", "admin").append("$and", List.of(globalOrMatching)));
+    }
+
     @Override
     public boolean deleteById(String id) {
         return delete("_id", new ObjectId(id)) > 0;

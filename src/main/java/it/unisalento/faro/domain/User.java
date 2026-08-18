@@ -19,6 +19,7 @@ public class User {
     private String password;
     private Role role;
     private String currentAreaId;
+    private String pushToken;
 
     public String getId() {
         return id;
@@ -74,6 +75,14 @@ public class User {
 
     public void setCurrentAreaId(String currentAreaId) {
         this.currentAreaId = currentAreaId;
+    }
+
+    public String getPushToken() {
+        return pushToken;
+    }
+
+    public void setPushToken(String pushToken) {
+        this.pushToken = pushToken;
     }
 
 }

@@ -125,6 +125,7 @@ public class AdminService {
         dto.setNome(admin.getNome());
         dto.setCognome(admin.getCognome());
         dto.setEmail(admin.getEmail());
+        dto.setPushToken(admin.getPushToken());
         dto.setCurrentAreaId(admin.getCurrentAreaId());
         if (admin.getRole() != null) {
             dto.setRole(admin.getRole().name());

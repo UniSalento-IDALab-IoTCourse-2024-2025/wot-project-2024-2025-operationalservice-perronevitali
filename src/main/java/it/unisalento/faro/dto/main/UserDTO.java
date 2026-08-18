@@ -8,6 +8,7 @@ public class UserDTO {
     private String email;
     private String role;
     private String currentAreaId;
+    private String pushToken;
 
     public String getId() {
         return id;
@@ -55,5 +56,13 @@ public class UserDTO {
 
     public void setCurrentAreaId(String currentAreaId) {
         this.currentAreaId = currentAreaId;
+    }
+
+    public String getPushToken() {
+        return pushToken;
+    }
+
+    public void setPushToken(String pushToken) {
+        this.pushToken = pushToken;
     }
 }

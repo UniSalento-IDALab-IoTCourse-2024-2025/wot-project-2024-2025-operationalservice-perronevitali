@@ -1,5 +1,6 @@
 package it.unisalento.faro.restcontrollers;
 
+import it.unisalento.faro.dto.main.PushTokenDTO;
 import it.unisalento.faro.dto.main.UserDTO;
 import it.unisalento.faro.dto.main.list.UsersListDTO;
 import it.unisalento.faro.dto.responseDTO.UserResponseDTO;
@@ -242,5 +243,46 @@ public class UserRestController {
         }
 
         return ResponseEntity.ok(responseDTO);
+    }
+
+    @RolesAllowed({"ADMIN", "WORKER"})
+    @RequestMapping(value = "/{id}/push-token",
+            method = RequestMethod.PUT,
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updatePushToken(@PathVariable String id, @RequestBody PushTokenDTO body) {
+        UserResponseDTO responseDTO = new UserResponseDTO();
+
+        try {
+            UserDTO updated = userService.updatePushToken(id, body.getPushToken());
+
+            List<UserDTO> list = new ArrayList<>();
+            list.add(updated);
+
+            UsersListDTO listDTO = new UsersListDTO();
+            listDTO.setUsersList(list);
+
+            responseDTO.setResult(UserResponseDTO.OK);
+            responseDTO.setMessage("Push token aggiornato con successo");
+            responseDTO.setUsers(listDTO);
+        } catch (UserNotFoundException e) {
+            responseDTO.setResult(UserResponseDTO.USER_NOT_FOUND);
+            responseDTO.setMessage("Nessun utente trovato");
+        }
+
+        return ResponseEntity.ok(responseDTO);
+    }
+
+    @RequestMapping(value = "/push-tokens",
+            method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getPushTokensForArea(@RequestParam("areaId") String areaId,
+                                                  @RequestHeader(value = "X-Internal-Secret", required = false) String secret) {
+        try {
+            List<String> tokens = userService.getPushTokensForArea(areaId, secret);
+            return ResponseEntity.ok(tokens);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 }
