@@ -184,6 +184,9 @@ public class UserService {
     }
 
     public List<String> getPushTokensForArea(String areaId, String suppliedSecret) throws SecurityException {
+        System.out.println("DEBUG internalSecret='" + internalSecret + "' (len=" + (internalSecret == null ? -1 : internalSecret.length()) + ")");
+        System.out.println("DEBUG suppliedSecret='" + suppliedSecret + "' (len=" + (suppliedSecret == null ? -1 : suppliedSecret.length()) + ")");
+
         if (internalSecret == null || !internalSecret.equals(suppliedSecret)) {
             throw new SecurityException("Secret interno non valido");
         }
