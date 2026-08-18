@@ -29,6 +29,9 @@ dependencies {
     // RabbitMQ reattivo (sostituisce spring-boot-starter-amqp)
     implementation 'io.quarkus:quarkus-messaging-rabbitmq'
 
+    // client MQTT nativo per il retain sui topic d'area
+    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+
     // sicurezza
     implementation 'io.quarkus:quarkus-security'
 
