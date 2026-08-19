@@ -289,4 +289,17 @@ public class UserRestController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
     }
+
+    @RequestMapping(value = "/push-token-for-user",
+            method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getPushTokenForUser(@RequestParam("userId") String userId) {
+        String secret = routingContext.request().getHeader("X-Internal-Secret");
+        try {
+            String token = userService.getPushTokenForUser(userId, secret);
+            return ResponseEntity.ok(token);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+    }
 }

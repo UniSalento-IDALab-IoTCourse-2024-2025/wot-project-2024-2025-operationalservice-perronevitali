@@ -211,6 +211,18 @@ public class UserService {
         return new ArrayList<>(tokens);
     }
 
+    public String getPushTokenForUser(String userId, String suppliedSecret) throws SecurityException {
+        if (internalSecret == null || !internalSecret.equals(suppliedSecret)) {
+            throw new SecurityException("Secret interno non valido");
+        }
+
+        User user = userRepository.findById(userId);
+        if (user == null || user.getPushToken() == null || user.getPushToken().isBlank()) {
+            return null;
+        }
+        return user.getPushToken();
+    }
+
     private UserDTO applyUpdate(User user, UserDTO userDto) throws EmailChangeNotAllowedException {
         if (!user.getEmail().equals(userDto.getEmail())) {
             throw new EmailChangeNotAllowedException();
