@@ -202,6 +202,12 @@ public class UserService {
             }
         }
 
+        for (User present : userRepository.findUsersCurrentlyInArea(areaId)) {
+            if (present.getPushToken() != null && !present.getPushToken().isBlank()) {
+                tokens.add(present.getPushToken());
+            }
+        }
+
         return new ArrayList<>(tokens);
     }
 

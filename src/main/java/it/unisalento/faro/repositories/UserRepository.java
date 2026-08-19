@@ -42,6 +42,10 @@ public class UserRepository implements PanacheMongoRepositoryBase<User, String> 
         return list(new Document("_t", "admin").append("$and", List.of(globalOrMatching)));
     }
 
+    public List<User> findUsersCurrentlyInArea(String areaId) {
+        return list(new Document("currentAreaId", areaId));
+    }
+
     @Override
     public boolean deleteById(String id) {
         return delete("_id", new ObjectId(id)) > 0;
