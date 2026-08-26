@@ -1,93 +1,99 @@
-# UserServiceFARO
+# FARO: UserService
 
+## Descrizione del progetto
+Il controllo della sicurezza negli ambienti industriali in cui vengono stoccate e movimentate sostanze pericolose rappresenta una delle sfide più delicate nella gestione degli impianti. Con l'aumento della complessità delle operazioni quotidiane, diventa fondamentale disporre di un supporto oggettivo che permetta di valutare in tempo reale se una determinata combinazione di attività concomitanti generi una condizione di rischio.
 
+Per rispondere a questa esigenza è stato sviluppato **FARO** (Framework di Allerta e Rilevamento Operativo), un sistema che realizza un **Digital Twin** dell'area di stoccaggio: una rappresentazione virtuale costantemente sincronizzata con lo stato fisico dell'impianto. FARO integra tre componenti complementari: il monitoraggio ambientale tramite sensori collegati a un Raspberry Pi in ciascuna zona, il tracciamento della posizione e delle autorizzazioni del personale tramite beacon BLE rilevati dall'app mobile, e un modulo di pianificazione delle operazioni che, prima di autorizzare una nuova attività, ne valuta il rischio combinando una formula quantitativa consolidata in letteratura con un modello di Machine Learning. L'obiettivo comune di queste componenti è rispondere, in ogni istante, alla domanda: **è sicuro autorizzare questa operazione, in questa zona, adesso?**
 
-## Getting started
+---
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Architettura del sistema
+FARO è organizzato secondo un'architettura a microservizi, in cui ciascun componente comunica con gli altri tramite API REST per le richieste sincrone e tramite RabbitMQ per gli eventi asincroni (AMQP tra microservizi, STOMP verso l'app mobile, MQTT per la diffusione degli allarmi d'area). Le principali componenti in cui si articola il sistema sono:
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+#### UserService *(repository corrente)*
+Microservizio Quarkus responsabile della gestione degli utenti (lavoratori e amministratori), dell'autenticazione JWT e della gestione delle code di messaggistica personale di ciascun utente.
 
-## Add your files
+#### OperationalService
+Microservizio Quarkus responsabile della gestione delle aree, degli item, delle sostanze pericolose e della pianificazione delle task, oltre all'orchestrazione della doppia valutazione del rischio (formula + Machine Learning).
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+#### MLService
+Servizio FastAPI che espone il modello di Machine Learning per la classificazione del rischio delle task e genera, tramite un LLM locale (Ollama), una spiegazione testuale del verdetto.
 
+#### EdgeService
+Servizio FastAPI deployato sul Raspberry Pi presente in ogni area, responsabile dell'acquisizione delle misurazioni ambientali dal sensore DHT11 e della diffusione degli allarmi.
+
+#### App mobile React Native
+Applicazione sviluppata con React Native ed Expo che consente a lavoratori e amministratori di autenticarsi, tracciare automaticamente la propria posizione tramite beacon BLE, pianificare/evadere le task e ricevere notifiche in tempo reale.
+
+#### RabbitMQ
+Message broker che gestisce sia la messaggistica AMQP interna tra microservizi sia i protocolli STOMP e MQTT (tramite i relativi plugin) usati rispettivamente dall'app mobile per la coda personale e per la diffusione degli allarmi d'area con meccanismo di *retain*.
+
+---
+
+Di seguito viene fornita una descrizione dettagliata della componente implementata nella repository corrente.
+
+## UserService
+
+### Panoramica
+*UserService* realizza tutti i requisiti relativi alla gestione degli utenti e dei ruoli del sistema. Si occupa di:
+- registrazione di nuovi utenti (riservata agli amministratori);
+- autenticazione e autorizzazione tramite token JWT;
+- gestione del profilo e dell'anagrafica di utenti, lavoratori e amministratori;
+- gestione delle code di messaggistica personale di ciascun utente;
+- inoltro degli aggiornamenti di posizione ricevuti dall'app mobile verso *OperationalService*.
+
+### Modello dati
+Il modello dati è organizzato attorno a un'entità base `User`, di cui `Worker` e `Admin` sono sottoclassi:
+- **User**: credenziali (email, password con hashing BCrypt), nome, cognome, ruolo, area corrente;
+- **Worker**: aggiunge l'elenco delle aree per cui è autorizzato ad operare (`authorizedAreaIds`);
+- **Admin**: aggiunge, se non è un amministratore globale, l'identificativo dell'unica area di propria competenza (`managedAreaId`).
+
+### Autenticazione e sicurezza
+L'autenticazione e l'autorizzazione delle richieste HTTP sono gestite tramite **JSON Web Token**, firmati con algoritmo HMAC-SHA256. Al login, il servizio genera un token contenente il soggetto (email), il ruolo (`ADMIN`/`WORKER`), l'identificativo dell'utente e, per gli amministratori con ambito ristretto, l'area di competenza gestita.
+
+Poiché Quarkus non offre nativamente un meccanismo di autenticazione Bearer-JWT personalizzabile in questo modo, il progetto implementa:
+- `BearerTokenAuthMechanism`: estrae il token dall'header `Authorization`;
+- `JwtIdentityProvider`: valida firma e scadenza del token e costruisce l'identità di sicurezza applicativa;
+- `JwtUtilities` / `SecurityConstants`: generazione e costanti di configurazione del token.
+
+Le password non vengono mai memorizzate in chiaro: al momento della registrazione sono sottoposte ad hashing tramite **BCrypt** (`spring-security-crypto`), utilizzato anche in fase di verifica delle credenziali.
+
+### Messaggistica: code personali
+All'atto della creazione dell'account, `QueueSeeder` dichiara su RabbitMQ una coppia di code dedicate per ciascun utente:
+- `faro.inbox.{userId}`: utilizzata per recapitare notifiche all'utente (assegnazione task, allarmi diretti);
+- `faro.outbox.{userId}`: utilizzata per ricevere dall'app mobile gli aggiornamenti di posizione (`POSITION_UPDATE`).
+
+Alla ricezione di un `POSITION_UPDATE`, *UserService* aggiorna l'area corrente dell'utente e inoltra l'informazione a *OperationalService* tramite l'exchange `faro.area.updates`, affinché quest'ultimo possa mantenere aggiornato il conteggio dei lavoratori presenti in ciascuna area. Il formato comune dei messaggi scambiati (`FaroMessage`) funge da wrapper con campo `type`, timestamp e payload specifico, per disaccoppiare i componenti del sistema.
+
+### API REST
+| Metodo | Path | Descrizione | Ruoli |
+|--------|------|-------------|-------|
+| POST | `/api/authenticate` | Login, restituisce token JWT | pubblico |
+| POST | `/api/registration` | Registrazione worker/admin | ADMIN |
+| GET | `/api/users/{id}` | Dettaglio utente | ADMIN, WORKER |
+| PUT | `/api/users/{id}` | Modifica utente | ADMIN, WORKER |
+| DELETE | `/api/users/{id}` | Eliminazione utente | ADMIN |
+| GET/PUT/DELETE | `/api/workers/{id}` | Gestione anagrafica lavoratore | ADMIN, WORKER |
+| PUT | `/api/workers/{id}/areas` | Assegnazione aree autorizzate | ADMIN |
+| GET/PUT/DELETE | `/api/admins/{id}` | Gestione anagrafica amministratore | ADMIN |
+| PUT | `/api/admins/{id}/area` | Assegnazione area di competenza | ADMIN |
+
+### Struttura del progetto
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/perrone.io81/userservicefaro.git
-git branch -M main
-git push -uf origin main
+src/main/java/it/unisalento/faro/
+├── configuration/       # AdminSeeder, SecurityBeansProducer, configurazione RabbitMQ
+├── domain/              # User, Worker, Admin, Role
+├── dto/                 # DTO di login/registrazione, DTO principali, DTO dei messaggi, response DTO
+├── exceptions/          # Eccezioni applicative (utente non trovato, email duplicata, ecc.)
+├── repositories/        # UserRepository (Panache/MongoDB)
+├── restcontrollers/     # AdminRestController, UserRestController, WorkerRestController, ...
+├── security/            # BearerTokenAuthMechanism, JwtIdentityProvider, JwtUtilities
+└── service/             # AdminService, UserService, WorkerService
 ```
 
-## Integrate with your tools
-
-* [Set up project integrations](https://gitlab.com/perrone.io81/userservicefaro/-/settings/integrations)
-
-## Collaborate with your team
-
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+### Tecnologie
+- **Quarkus** (Java 21) con i moduli `quarkus-mongodb-panache`, `quarkus-security`, `quarkus-spring-web`/`quarkus-spring-di`, `quarkus-rabbitmq-client`, `rest-client`;
+- **MongoDB** dedicato (principio *database-per-service*);
+- **RabbitMQ** per la messaggistica asincrona (AMQP);
+- **JWT** (HMAC-SHA256) + **BCrypt** per sicurezza e autenticazione;
+- **Docker**, con immagini `linux/arm64` per il deployment su Raspberry Pi.
