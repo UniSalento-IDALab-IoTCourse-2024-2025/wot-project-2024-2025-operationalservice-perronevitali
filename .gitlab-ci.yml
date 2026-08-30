@@ -9,7 +9,7 @@ build:
   script:
     - export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-arm64
     - export PATH=$JAVA_HOME/bin:$PATH
-    - ./gradlew quarkusBuild
+    - ./gradlew clean quarkusBuild
   artifacts:
     paths:
       - build/UserServiceFARO-0.0.1-SNAPSHOT-runner.jar
